@@ -83,11 +83,14 @@ contract OrderBook {
 		}
 	}
 
-        function getOpenOrders (address baseToken, address quoteToken, Side side) public view returns (Order[] memory) {
+	// baseQuantity < dust will be ignored
+        function getOpenOrders (address baseToken, address quoteToken, Side side, uint dust) public view returns (Order[] memory) {
                 uint counter = 0;
                 uint currentOrderId = orderbooks[baseToken][quoteToken][side];
                 while (currentOrderId != 0) {
-                        counter++;
+			if (orders[currentOrderId].baseQuantity >= dust) {
+				counter++;
+			}
                         currentOrderId = orders[currentOrderId].nextOrderId;
                 }
                 Order[] memory openOrders = new Order[](counter);
@@ -95,8 +98,10 @@ contract OrderBook {
                 currentOrderId = orderbooks[baseToken][quoteToken][side];
                 counter = 0;
                 while (currentOrderId != 0) {
-                        openOrders[counter] = orders[currentOrderId];
-                        counter++;
+			if (orders[currentOrderId].baseQuantity >= dust) {
+				openOrders[counter] = orders[currentOrderId];
+				counter++;
+			}
                         currentOrderId = orders[currentOrderId].nextOrderId;
                 }
                 return openOrders;
