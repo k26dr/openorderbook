@@ -1,8 +1,9 @@
 contract OrderBook {
         enum Side { BUY, SELL }
         struct Order {
-                uint price;
-                uint quantity;
+		address user;
+                uint baseQuantity;
+                uint quoteQuantity;
                 uint orderId;
                 uint nextOrderId;
                 uint previousOrderId;
@@ -14,15 +15,22 @@ contract OrderBook {
         mapping(address => mapping(address => mapping(Side => uint))) orderbooks;
         uint orderCounter = 0;
 
-        function placeOrder (address baseToken, address quoteToken, Side side, uint price, uint quantity) public {
+        function placeOrder (address baseToken, address quoteToken, Side side, uint sellQuantity, uint buyQuantity) public {
+		if (side == Side.SELL) {
+			IERC20(baseToken).transferFrom(msg.sender, address(this), baseQuantity);
+		}
+		else if (side == Side.BUY) {
+			IERC20(quoteToken).transferFrom(msg.sender, address(this), quoteQuantity);
+		}
                 uint orderId = ++orderCounter;
-                orders[orderId] = Order(price, quantity, orderId, orderbooks[baseToken][quoteToken][side], 0, baseToken, quoteToken, side);
+                orders[orderId] = Order(msg.sender, sellQuantity, buyQuantity, orderId, orderbooks[baseToken][quoteToken][side], 0, baseToken, quoteToken, side);
                 orders[orderbooks[baseToken][quoteToken][side]].previousOrderId = orderId;
                 orderbooks[baseToken][quoteToken][side] = orderId;
         }
 
         function cancelOrder (uint orderId) public {
                 Order memory order = orders[orderId];
+		require(msg.sender == order.user, "users can only cancel their own order");
                 if (order.previousOrderId == 0) {
                         orderbooks[order.baseToken][order.quoteToken][order.side] = order.nextOrderId;
                 }
@@ -30,7 +38,37 @@ contract OrderBook {
                         orders[order.previousOrderId].nextOrderId = order.nextOrderId;
                 }
                 delete orders[orderId];
+		if (order.side == Side.SELL) {
+			IERC20(baseToken).transfer(msg.sender, baseQuantity);
+		}
+		else if (order.side == Side.BUY) {
+			IERC20(quoteToken).transfer(msg.sender, quoteQuantity);
+		}
         }
+	
+	function fillOrder (uint orderId, uint baseQuantity) public {
+                Order memory order = orders[orderId];
+		uint quoteQuantity = baseQuantity * order.quoteQuantity / order.baseQuantity;
+		orders[orderId].baseQuantity -= baseQuantity;
+		orders[orderId].quoteQuantity -= quoteQuantity;
+		if (orders[orderId].baseQuantity == 0) {
+			if (order.previousOrderId == 0) {
+				orderbooks[order.baseToken][order.quoteToken][order.side] = order.nextOrderId;
+			}
+			else {
+				orders[order.previousOrderId].nextOrderId = order.nextOrderId;
+			}
+			delete orders[orderId];
+		}
+		if (order.side == Side.SELL) {
+			IERC20(quoteToken).transferFrom(msg.sender, order.user, quoteQuantity);
+			IERC20(baseToken).transferFrom(address(this), msg.sender, baseQuantity);
+		}
+		else if (order.side == Side.BUY) {
+			IERC20(baseToken).transferFrom(msg.sender, order.user, baseQuantity);
+			IERC20(quoteToken).transferFrom(address(this), msg.sender, quoteQuantity);
+		}
+	}
 
         function getOpenOrders (address baseToken, address quoteToken, Side side) public view returns (Order[] memory) {
                 uint counter = 0;
