@@ -7,6 +7,7 @@ contract OrderBook {
 		uint nextOrderId;
 		address baseToken;
 		address quoteToken;
+		Side side;
 	}
 	mapping(uint => Order) orders;    
 	mapping(address => mapping(address => mapping(Side => uint)) orderbooks;
@@ -14,14 +15,8 @@ contract OrderBook {
 	
 	function placeOrder (address baseToken, address quoteToken, Side side, uint price, uint quantity) {
 		uint orderId = ++orderCounter;
-		orders[orderId] = Order(price, quantity, orderbooks[baseToken][quoteToken][side]);
+		orders[orderId] = Order(price, quantity, orderId, orderbooks[baseToken][quoteToken][side], baseToken, quoteToken, side);
 		orderbooks[baseToken][quoteToken][side] = orderId;
 	}
 
-	function cancelOrder (uint orderId) {
-		delete orders[orderId];
-	}
-
-	function getOpenOrders (address baseToken, address quoteToken, Side side) {
-	}
 }
