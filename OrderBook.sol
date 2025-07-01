@@ -1,3 +1,16 @@
+
+interface IERC20 {
+    event Transfer(address indexed from, address indexed to, uint256 value);
+    event Approval(address indexed owner, address indexed spender, uint256 value);
+   
+    function totalSupply() external view returns (uint256);
+    function balanceOf(address account) external view returns (uint256);
+    function transfer(address to, uint256 value) external returns (bool);
+    function allowance(address owner, address spender) external view returns (uint256);
+    function approve(address spender, uint256 value) external returns (bool);
+    function transferFrom(address from, address to, uint256 value) external returns (bool);
+}
+
 contract OrderBook {
         enum Side { BUY, SELL }
         struct Order {
@@ -15,7 +28,7 @@ contract OrderBook {
         mapping(address => mapping(address => mapping(Side => uint))) orderbooks;
         uint orderCounter = 0;
 
-        function placeOrder (address baseToken, address quoteToken, Side side, uint sellQuantity, uint buyQuantity) public {
+        function placeOrder (address baseToken, address quoteToken, Side side, uint baseQuantity, uint quoteQuantity) public {
 		if (side == Side.SELL) {
 			IERC20(baseToken).transferFrom(msg.sender, address(this), baseQuantity);
 		}
@@ -23,7 +36,7 @@ contract OrderBook {
 			IERC20(quoteToken).transferFrom(msg.sender, address(this), quoteQuantity);
 		}
                 uint orderId = ++orderCounter;
-                orders[orderId] = Order(msg.sender, sellQuantity, buyQuantity, orderId, orderbooks[baseToken][quoteToken][side], 0, baseToken, quoteToken, side);
+                orders[orderId] = Order(msg.sender, baseQuantity, quoteQuantity, orderId, orderbooks[baseToken][quoteToken][side], 0, baseToken, quoteToken, side);
                 orders[orderbooks[baseToken][quoteToken][side]].previousOrderId = orderId;
                 orderbooks[baseToken][quoteToken][side] = orderId;
         }
@@ -39,10 +52,10 @@ contract OrderBook {
                 }
                 delete orders[orderId];
 		if (order.side == Side.SELL) {
-			IERC20(baseToken).transfer(msg.sender, baseQuantity);
+			IERC20(order.baseToken).transfer(msg.sender, order.baseQuantity);
 		}
 		else if (order.side == Side.BUY) {
-			IERC20(quoteToken).transfer(msg.sender, quoteQuantity);
+			IERC20(order.quoteToken).transfer(msg.sender, order.quoteQuantity);
 		}
         }
 	
@@ -61,12 +74,12 @@ contract OrderBook {
 			delete orders[orderId];
 		}
 		if (order.side == Side.SELL) {
-			IERC20(quoteToken).transferFrom(msg.sender, order.user, quoteQuantity);
-			IERC20(baseToken).transferFrom(address(this), msg.sender, baseQuantity);
+			IERC20(order.quoteToken).transferFrom(msg.sender, order.user, quoteQuantity);
+			IERC20(order.baseToken).transferFrom(address(this), msg.sender, baseQuantity);
 		}
 		else if (order.side == Side.BUY) {
-			IERC20(baseToken).transferFrom(msg.sender, order.user, baseQuantity);
-			IERC20(quoteToken).transferFrom(address(this), msg.sender, quoteQuantity);
+			IERC20(order.baseToken).transferFrom(msg.sender, order.user, baseQuantity);
+			IERC20(order.quoteToken).transferFrom(address(this), msg.sender, quoteQuantity);
 		}
 	}
 
@@ -89,3 +102,4 @@ contract OrderBook {
                 return openOrders;
         }
 }
+
