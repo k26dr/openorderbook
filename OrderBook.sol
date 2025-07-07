@@ -28,7 +28,7 @@ contract OrderBook {
         mapping(address => mapping(address => mapping(Side => uint))) orderbooks;
         uint orderCounter = 0;
 
-	event OrderPlaced(uint orderId, address user, address indexed baseToken, address indexed quoteToken, Side side, uint baseQuantity, uint quoteQuantity);
+	event OrderPlaced(uint orderId, address indexed user, address indexed baseToken, address indexed quoteToken, Side side, uint baseQuantity, uint quoteQuantity);
 	event OrderCanceled(uint indexed orderId);
 	event OrderFill(uint indexed orderId, uint baseQuantity);
 
