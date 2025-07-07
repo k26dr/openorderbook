@@ -28,6 +28,10 @@ contract OrderBook {
         mapping(address => mapping(address => mapping(Side => uint))) orderbooks;
         uint orderCounter = 0;
 
+	event OrderPlaced(uint orderId, address user, address indexed baseToken, address indexed quoteToken, Side side, uint baseQuantity, uint quoteQuantity);
+	event OrderCanceled(uint indexed orderId);
+	event OrderFill(uint indexed orderId, uint baseQuantity);
+
         function placeOrder (address baseToken, address quoteToken, Side side, uint baseQuantity, uint quoteQuantity) public {
 		if (side == Side.SELL) {
 			IERC20(baseToken).transferFrom(msg.sender, address(this), baseQuantity);
@@ -39,6 +43,7 @@ contract OrderBook {
                 orders[orderId] = Order(msg.sender, baseQuantity, quoteQuantity, orderId, orderbooks[baseToken][quoteToken][side], 0, baseToken, quoteToken, side);
                 orders[orderbooks[baseToken][quoteToken][side]].previousOrderId = orderId;
                 orderbooks[baseToken][quoteToken][side] = orderId;
+		emit OrderPlaced(orderId, msg.sender, baseToken, quoteToken, side, baseQuantity, quoteQuantity);
         }
 
         function cancelOrder (uint orderId) public {
@@ -57,6 +62,7 @@ contract OrderBook {
 		else if (order.side == Side.BUY) {
 			IERC20(order.quoteToken).transfer(msg.sender, order.quoteQuantity);
 		}
+		emit OrderCanceled(orderId);
         }
 	
 	function fillOrder (uint orderId, uint baseQuantity) public {
@@ -81,6 +87,7 @@ contract OrderBook {
 			IERC20(order.baseToken).transferFrom(msg.sender, order.user, baseQuantity);
 			IERC20(order.quoteToken).transferFrom(address(this), msg.sender, quoteQuantity);
 		}
+		emit OrderFill(orderId, baseQuantity);
 	}
 
 	// baseQuantity < dust will be ignored
