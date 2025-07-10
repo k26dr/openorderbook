@@ -1,5 +1,44 @@
-<h2>Place Order</h2>
+<h1>OpenOrderBook</h1>
 
-<h2>Orderbook</h2>
-
+<p id="active-chain">Active Chain: None</p>
 <h2>Pairs</h2>
+<section id="pairs"></section>
+
+<script>
+let activeChainId;
+const tokens = {
+	"0xaa36a7" : [
+		{"name":"Berkshire B Shares", "symbol": "BRK.B", decimals: 0, address: "0x5e474594F9de73D8D0Af6a04bae2E9666bBB3c96"},
+		{"name":"USD Coin", "symbol": "USDC", decimals: 8, address: "0xd21A62A9db16cC7e9C9Aac3C24A838CECBAb451d"},
+	]
+}
+const pairs = {
+	"0xaa36a7": [
+		{"baseCurrency": "0x5e474594F9de73D8D0Af6a04bae2E9666bBB3c96", "quoteCurrency": "0xd21A62A9db16cC7e9C9Aac3C24A838CECBAb451d", "quoteDecimals": 2}
+	]
+}
+const contract_addresses = {
+	"0xaa36a7": "0x60602D9cd46d443C5D652f515ECD6b39358BAD7b",
+}
+const chainNames = {
+	"0x1": "Ethereum Mainnet",
+	"0xaa36a7": "Sepolia"
+}
+
+window.addEventListener('load', async function () {
+	activeChainId = await window.ethereum.request({ method: "eth_chainId" })
+	document.getElementById("active-chain").innerHTML = "Active Chain: " + chainNames[activeChainId]
+	renderPairs(activeChainId)
+})
+
+function renderPairs (chainId) {
+	if (!pairs[chainId] || pairs[chainId].length === 0)
+		document.getElementById("pairs").innerHTML = `<p>No verified pairs for this chain.</p><p>Currently supported chains: Sepolia</p>`
+	pairs[chainId].forEach(pair => {
+		const baseCurrency = tokens[chainId].find(token => token.address === pair.baseCurrency);
+		const quoteCurrency = tokens[chainId].find(token => token.address === pair.quoteCurrency);
+		document.getElementById("pairs").innerHTML += `<p>${baseCurrency.symbol}-${quoteCurrency.symbol}</p>`	
+	})
+}
+</script>
+
