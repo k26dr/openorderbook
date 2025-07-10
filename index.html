@@ -1,8 +1,12 @@
 <h1>OpenOrderBook</h1>
 
 <p id="active-chain">Active Chain: None</p>
+
 <h2>Pairs</h2>
 <section id="pairs"></section>
+
+<h2>Orderbook</h2>
+<section id="orderbook"></section>
 
 <script>
 let activeChainId;
@@ -34,11 +38,17 @@ window.addEventListener('load', async function () {
 function renderPairs (chainId) {
 	if (!pairs[chainId] || pairs[chainId].length === 0)
 		document.getElementById("pairs").innerHTML = `<p>No verified pairs for this chain.</p><p>Currently supported chains: Sepolia</p>`
-	pairs[chainId].forEach(pair => {
+	pairs[chainId].forEach((pair, i) => {
+		document.getElementById("pairs").innerHTML = "";
 		const baseCurrency = tokens[chainId].find(token => token.address === pair.baseCurrency);
 		const quoteCurrency = tokens[chainId].find(token => token.address === pair.quoteCurrency);
-		document.getElementById("pairs").innerHTML += `<p>${baseCurrency.symbol}-${quoteCurrency.symbol}</p>`	
+		const pairName = baseCurrency.symbol + "-" + quoteCurrency.symbol
+		document.getElementById("pairs").innerHTML += `<input type="radio" name="pair-radio" value="${pairName}" id="${pairName}" />`
+		document.getElementById("pairs").innerHTML += `<label for="${pairName}">${pairName}</label>`
+		if (i === 0) document.getElementById(pairName).checked = true
 	})
 }
+
+window.ethereum.on("chainChanged", renderPairs)
 </script>
 
