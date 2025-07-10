@@ -1,4 +1,3 @@
-
 interface IERC20 {
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Approval(address indexed owner, address indexed spender, uint256 value);
@@ -26,7 +25,7 @@ contract OrderBook {
         }
         mapping(uint => Order) public orders;
         mapping(address => mapping(address => mapping(Side => uint))) public orderbooks;
-        uint public orderCounter = 0;
+        uint public orderCounter = 0; 
 
 	event OrderPlaced(uint orderId, address indexed user, address indexed baseToken, address indexed quoteToken, Side side, uint baseQuantity, uint quoteQuantity);
 	event OrderCanceled(uint indexed orderId);
@@ -67,6 +66,7 @@ contract OrderBook {
 	
 	function fillOrder (uint orderId, uint baseQuantity) public {
                 Order memory order = orders[orderId];
+                require(baseQuantity <= order.baseQuantity, "trying to fill more than order size");
 		uint quoteQuantity = baseQuantity * order.quoteQuantity / order.baseQuantity;
 		orders[orderId].baseQuantity -= baseQuantity;
 		orders[orderId].quoteQuantity -= quoteQuantity;
@@ -81,11 +81,11 @@ contract OrderBook {
 		}
 		if (order.side == Side.SELL) {
 			IERC20(order.quoteToken).transferFrom(msg.sender, order.user, quoteQuantity);
-			IERC20(order.baseToken).transferFrom(address(this), msg.sender, baseQuantity);
+			IERC20(order.baseToken).transfer(msg.sender, baseQuantity);
 		}
 		else if (order.side == Side.BUY) {
 			IERC20(order.baseToken).transferFrom(msg.sender, order.user, baseQuantity);
-			IERC20(order.quoteToken).transferFrom(address(this), msg.sender, quoteQuantity);
+			IERC20(order.quoteToken).transfer(msg.sender, quoteQuantity);
 		}
 		emit OrderFill(orderId, baseQuantity);
 	}
