@@ -5,6 +5,15 @@
 <h2>Pairs</h2>
 <section id="pairs"></section>
 
+<p>To view an unverified or custom pair, enter the base and quote token addresses below and hit Go.</p>
+<div id="custom-pair-form">
+	<label for="custom-base-currency">Base Currency: </label>
+	<input id="custom-base-currency" placeholder="0xfff...">
+	<label for="custom-quote-currency"> Quote Currency: </label>
+	<input id="custom-quote-currency" placeholder="0xfff...">
+	<button id="custom-currency-go">Go</button>
+</div>
+
 <h2>Orderbook</h2>
 <section id="orderbook"></section>
 
@@ -44,7 +53,7 @@ function renderPairs (chainId) {
 		const quoteCurrency = tokens[chainId].find(token => token.address === pair.quoteCurrency);
 		const pairName = baseCurrency.symbol + "-" + quoteCurrency.symbol
 		document.getElementById("pairs").innerHTML += `<input type="radio" name="pair-radio" value="${pairName}" id="${pairName}" />`
-		document.getElementById("pairs").innerHTML += `<label for="${pairName}">${pairName}</label>`
+		document.getElementById("pairs").innerHTML += `<label for="${pairName}">${pairName}</label><br>`
 		if (i === 0) document.getElementById(pairName).checked = true
 	})
 }
