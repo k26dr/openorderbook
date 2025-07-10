@@ -32,6 +32,7 @@ contract OrderBook {
 	event OrderFill(uint indexed orderId, uint baseQuantity);
 
         function placeOrder (address baseToken, address quoteToken, Side side, uint baseQuantity, uint quoteQuantity) public {
+		require(baseQuantity > 0 && quoteQuantity > 0, "zero quantity orders not permitted");
 		if (side == Side.SELL) {
 			IERC20(baseToken).transferFrom(msg.sender, address(this), baseQuantity);
 		}
@@ -66,8 +67,10 @@ contract OrderBook {
 	
 	function fillOrder (uint orderId, uint baseQuantity) public {
                 Order memory order = orders[orderId];
+                require(baseQuantity > 0, "zero quantity fills not permitted");
                 require(baseQuantity <= order.baseQuantity, "trying to fill more than order size");
 		uint quoteQuantity = baseQuantity * order.quoteQuantity / order.baseQuantity;
+                require(quoteQuantity > 0, "calculated quote quantity is zero");
 		orders[orderId].baseQuantity -= baseQuantity;
 		orders[orderId].quoteQuantity -= quoteQuantity;
 		if (orders[orderId].baseQuantity == 0) {
