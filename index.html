@@ -15,19 +15,21 @@
 </div>
 
 <h2>Orderbook</h2>
-<section id="orderbook"></section>
+<table id="orderbook"></table>
 
 <script>
 let activeChainId;
 const tokens = {
 	"0xaa36a7" : [
-		{"name":"Berkshire B Shares", "symbol": "BRK.B", decimals: 0, address: "0x5e474594F9de73D8D0Af6a04bae2E9666bBB3c96"},
+		{"name":"Japanese Yen Stablecoin", "symbol": "GYEN", decimals: 8, address: "0xa93C3ea81C1a5e0c50d8987746Aa7f9Cb19f7D9c"},
 		{"name":"USD Coin", "symbol": "USDC", decimals: 8, address: "0xd21A62A9db16cC7e9C9Aac3C24A838CECBAb451d"},
+		{"name":"Euro Tether", "symbol": "EURT", decimals: 8, address: "0x2Cecb94CE1790a115687f4FffB380AE2e85D6803"},
 	]
 }
 const pairs = {
 	"0xaa36a7": [
-		{"baseCurrency": "0x5e474594F9de73D8D0Af6a04bae2E9666bBB3c96", "quoteCurrency": "0xd21A62A9db16cC7e9C9Aac3C24A838CECBAb451d", "quoteDecimals": 2}
+		{"baseToken": "0xd21A62A9db16cC7e9C9Aac3C24A838CECBAb451d", "quoteToken": "0xa93C3ea81C1a5e0c50d8987746Aa7f9Cb19f7D9c", "quoteDecimals": 2},
+		{"baseToken": "0x2Cecb94CE1790a115687f4FffB380AE2e85D6803", "quoteToken": "0xd21A62A9db16cC7e9C9Aac3C24A838CECBAb451d", "quoteDecimals": 6},
 	]
 }
 const contract_addresses = {
@@ -40,24 +42,57 @@ const chainNames = {
 
 window.addEventListener('load', async function () {
 	activeChainId = await window.ethereum.request({ method: "eth_chainId" })
-	document.getElementById("active-chain").innerHTML = "Active Chain: " + chainNames[activeChainId]
-	renderPairs(activeChainId)
+	renderChain(activeChainId)
 })
+
+function renderChain (chainId) {
+	document.getElementById("active-chain").innerHTML = "Active Chain: " + chainNames[chainId]
+	renderPairs(chainId)
+	renderOrderbook(pairs[chainId][0], chainId)
+}
 
 function renderPairs (chainId) {
 	if (!pairs[chainId] || pairs[chainId].length === 0)
 		document.getElementById("pairs").innerHTML = `<p>No verified pairs for this chain.</p><p>Currently supported chains: Sepolia</p>`
 	pairs[chainId].forEach((pair, i) => {
-		document.getElementById("pairs").innerHTML = "";
-		const baseCurrency = tokens[chainId].find(token => token.address === pair.baseCurrency);
-		const quoteCurrency = tokens[chainId].find(token => token.address === pair.quoteCurrency);
-		const pairName = baseCurrency.symbol + "-" + quoteCurrency.symbol
-		document.getElementById("pairs").innerHTML += `<input type="radio" name="pair-radio" value="${pairName}" id="${pairName}" />`
-		document.getElementById("pairs").innerHTML += `<label for="${pairName}">${pairName}</label><br>`
+		const baseToken = tokens[chainId].find(token => token.address === pair.baseToken);
+		const quoteToken = tokens[chainId].find(token => token.address === pair.quoteToken);
+		const pairName = baseToken.symbol + "-" + quoteToken.symbol
+		document.getElementById("pairs").innerHTML += `
+			<div>
+				<input type="radio" name="pair-radio" value="${pairName}" id="${pairName}" />
+				<label for="${pairName}">${pairName}</label>
+			</div>
+		`
 		if (i === 0) document.getElementById(pairName).checked = true
 	})
 }
 
-window.ethereum.on("chainChanged", renderPairs)
+async function renderOrderbook(pair, chainId) {
+	const bids = await getOpenOrders(pair.baseToken, pair.quoteToken, 0, 0)
+	const offers = await getOpenOrders(pair.baseToken, pair.quoteToken, 1, 0)
+	const baseToken = tokens[chainId].find(token => token.address === pair.baseToken);
+	const quoteToken = tokens[chainId].find(token => token.address === pair.quoteToken);
+	document.getElementById('orderbook').innerHTML += `<tr><td>Price</td><td>${baseToken.symbol}</td><td>${quoteToken.symbol}</td></tr>`
+	console.log(bids, offers)
+	offers.sort().forEach(offer => {
+		//document.getElementById('orderbook').innerHTML += `<tr><td>Price</td><td>${baseToken.symbol}</td><td>${quoteToken.symbol}</td></tr>`
+	})
+}
+
+async function getOpenOrders(baseToken, quoteToken, side, dust) {
+	const side_calldata = (side === 1) ? "0000000000000000000000000000000000000000000000000000000000000001" : "0000000000000000000000000000000000000000000000000000000000000000"
+	const dust_calldata = dust.toString(16).padStart(64, '0') 
+	const calldata = "0x26951bbc" + "000000000000000000000000" + baseToken.slice(2) + "000000000000000000000000" + quoteToken.slice(2) + side_calldata + dust_calldata
+	return await window.ethereum.request({ 
+		method: "eth_call", 
+		params: [{
+			to: contract_addresses[activeChainId],
+			data: calldata
+		}, 'latest']
+	})
+}
+
+window.ethereum.on("chainChanged", renderChain)
 </script>
 
