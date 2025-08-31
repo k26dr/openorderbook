@@ -75,5 +75,12 @@ contract OrderBook {
 		}
 		emit OrderFill(orderId, baseQuantity);
 	}
+
+	function fillOrders(uint[] calldata orderIds, uint[] calldata baseFillQuantities) public {
+		require(orderIds.length == baseFillQuantities.length, "orderIds and baseFillQuantities array lengths must match");
+		for (uint i=0; i < orderIds.length; i++) {
+			fillOrder(orderIds[i], baseFillQuantities[i]);
+		}
+	}
 }
 
