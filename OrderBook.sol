@@ -28,7 +28,7 @@ contract OrderBook {
 	event OrderCanceled(uint indexed orderId);
 	event OrderFill(uint indexed orderId, uint baseQuantity);
 
-        function placeOrder (address baseToken, address quoteToken, Side side, uint baseQuantity, uint quoteQuantity) public {
+	function placeOrder (address baseToken, address quoteToken, Side side, uint baseQuantity, uint quoteQuantity) public {
 		require(baseQuantity > 0 && quoteQuantity > 0, "zero quantity orders not permitted");
 		if (side == Side.SELL) {
 			IERC20(baseToken).transferFrom(msg.sender, address(this), baseQuantity);
@@ -41,8 +41,8 @@ contract OrderBook {
 		emit OrderPlaced(orderId, msg.sender, baseToken, quoteToken, side, baseQuantity, quoteQuantity);
         }
 
-        function cancelOrder (uint orderId) public {
-                Order memory order = orders[orderId];
+	function cancelOrder (uint orderId) public {
+		Order memory order = orders[orderId];
 		require(msg.sender == order.user, "users can only cancel their own order");
                 delete orders[orderId];
 		if (order.side == Side.SELL) {
